@@ -15,7 +15,7 @@ def _launch_setup(context):
     # Package path
     pkg_share = FindPackageShare('fastdem_ros2')
 
-    # Config file (single superset YAML — same format as ROS1)
+    # Config file
     config_name = 'global_mapping.yaml' if global_mapping else 'local_mapping.yaml'
     rviz_name = 'fastdem_global.rviz' if global_mapping else 'fastdem_local.rviz'
     config_file = PathJoinSubstitution([pkg_share, 'config', config_name])

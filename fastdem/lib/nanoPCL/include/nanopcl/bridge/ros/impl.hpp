@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT
 //
 // ROS bridge implementation details.
-// Do not include this file directly; include <nanopcl/bridge/ros1.hpp> or
-// <nanopcl/bridge/ros2.hpp>
+// Do not include this file directly; include <nanopcl/bridge/ros2.hpp>.
 
 #ifndef NANOPCL_BRIDGE_ROS_IMPL_HPP
 #define NANOPCL_BRIDGE_ROS_IMPL_HPP
@@ -18,7 +17,7 @@ namespace nanopcl {
 
 namespace detail {
 
-// PointField datatype constants (same for ROS1 and ROS2)
+// PointField datatype constants.
 struct PointFieldTypes {
   static constexpr uint8_t INT8 = 1;
   static constexpr uint8_t UINT8 = 2;

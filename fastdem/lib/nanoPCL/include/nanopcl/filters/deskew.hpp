@@ -60,7 +60,7 @@ using PoseLookupFunc = std::function<Eigen::Isometry3d(double)>;
 /// @code
 /// // ROS TF2 example
 /// auto corrected = filters::deskew(cloud, [&](double t) {
-///     auto tf = tf_buffer.lookupTransform("odom", "base_link", ros::Time(t));
+///     auto tf = tf_buffer.lookupTransform("odom", "base_link", rclcpp::Time(t));
 ///     return nanopcl::from(tf);
 /// });
 ///

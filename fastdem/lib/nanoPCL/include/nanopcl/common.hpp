@@ -9,7 +9,6 @@
 //   #include <nanopcl/search.hpp>      // Spatial search (VoxelHash, KdTree)
 //
 // For external format conversion (requires external dependencies):
-//   #include <nanopcl/bridge/ros1.hpp> // ROS 1 sensor_msgs (requires ROS 1)
 //   #include <nanopcl/bridge/ros2.hpp> // ROS 2 sensor_msgs (requires ROS 2)
 //   #include <nanopcl/bridge/pcl.hpp>  // PCL pcl::PointCloud (requires PCL)
 

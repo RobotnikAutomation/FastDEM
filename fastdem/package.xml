@@ -7,7 +7,7 @@
   <maintainer email="tre0430@korea.ac.kr">Ikhyeon Cho</maintainer>
   <license>BSD</license>
 
-  <!-- Pure CMake build (not catkin) -->
+  <!-- Pure CMake build -->
   <buildtool_depend>cmake</buildtool_depend>
 
   <!-- System dependencies -->

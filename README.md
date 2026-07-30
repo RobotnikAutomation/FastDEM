@@ -8,7 +8,6 @@
 <p align="center"><i><b>Ultra-fast elevation mapping</b> on <b>embedded</b> robots — <b>100+ Hz</b> on Jetson Orin</i></p>
 
 <p align="center">
-  <a href="#start-with-ros1">ROS1</a> ·
   <a href="#start-with-ros2">ROS2</a> ·
   <a href="#use-fastdem-as-a-c-library">C++ API</a>
 </p>
@@ -55,28 +54,6 @@ The mapping pipeline runs at **~10 ms** on embedded CPUs — fast enough to leav
 
 - **Eigen3**, **yaml-cpp**, **spdlog**
 - **[nanoGrid](https://github.com/Ikhyeon-Cho/nanoGrid)**, **nanoPCL** — bundled automatically
-
----
-
-## Start with ROS1
-
-**Prerequisites:** Ubuntu 20.04, [ROS Noetic](http://wiki.ros.org/noetic/Installation)
-
-```bash
-# Dependencies
-sudo apt install libeigen3-dev libyaml-cpp-dev libspdlog-dev
-sudo apt install ros-noetic-tf2-eigen ros-noetic-grid-map-msgs
-
-# Clone and build
-cd ~/catkin_ws/src
-git clone https://github.com/Ikhyeon-Cho/FastDEM.git
-catkin build fastdem_ros
-
-# Run (add global_mapping:=true for map-centric mode)
-roslaunch fastdem_ros run.launch rviz:=true
-```
-
-Configuration: [`ros1/config/local_mapping.yaml`](ros1/config/local_mapping.yaml) · [`ros1/config/global_mapping.yaml`](ros1/config/global_mapping.yaml)
 
 ---
 
