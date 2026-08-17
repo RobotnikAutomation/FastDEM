@@ -35,6 +35,7 @@ struct Config {
   config::SensorModel sensor_model;
   config::Mapping mapping;
   config::Raycasting raycasting;
+  config::DropDetection drop_detection;
 };
 
 Config parseConfig(const YAML::Node& root);

@@ -44,3 +44,17 @@ raycasting:
   log_odds_ghost: 0.2        # evidence for cell being empty (ray passes below)
   log_odds_max: 2.0          # upper clamp (prevents over-confidence)
   clear_threshold: -1.0      # clear cell when logodds falls below this
+
+# Drop detection (negative obstacle / cliff detection)
+drop_detection:
+  enabled: false
+  reference_z_offset: 0.0    # [m] offset from robot base for reference height
+  drop_height_threshold: 0.05  # [m] min drop depth to trigger detection
+  unknown_is_drop: true      # treat unmeasured (NaN) as drop hazard
+  min_detection_range: 0.3   # [m] min range from robot
+  max_detection_range: 3.0   # [m] max range from robot
+  filter_small_unknown_holes: false  # enable small NaN component filtering
+  max_safe_unknown_hole_size: 0.10   # [m²] max size of safe NaN holes
+  inflation_radius: 0.0      # [m] dilation radius for drop mask
+  virtual_obstacle_height: 0.30  # [m] height of virtual obstacle above drop
+  compensate_robot_tilt: false   # use roll/pitch for reference plane (future)

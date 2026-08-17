@@ -111,6 +111,7 @@ class MappingNode : public rclcpp::Node {
     pub_post_map_     = this->create_publisher<Cloud>("~/postprocess/cloud", 1);
     pub_post_gridmap_ = this->create_publisher<GridMapMsg>("~/postprocess/gridmap", 1);
     pub_normals_      = this->create_publisher<MarkerArray>("~/postprocess/normals", 1);
+    pub_drop_cloud_   = this->create_publisher<Cloud>("~/drop/cloud", 1);
 
     auto to_ms = [](double rate) {
       return std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -252,12 +253,14 @@ class MappingNode : public rclcpp::Node {
     const bool want_gridmap =
         pub_gridmap_->get_subscription_count() > 0 && !is_global;
     const bool want_boundary = pub_boundary_->get_subscription_count() > 0;
-    if (!want_cloud && !want_gridmap && !want_boundary) return;
+    const bool want_drop = pub_drop_cloud_->get_subscription_count() > 0;
+    if (!want_cloud && !want_gridmap && !want_boundary && !want_drop) return;
 
     std::shared_lock lock(map_mutex_);
     if (want_cloud) publishMapCloud();
     if (want_gridmap) publishGridMap();
     if (want_boundary) publishMapBoundary();
+    if (want_drop) publishDropCloud();
   }
 
   void publishGlobalView() {
@@ -293,6 +296,12 @@ class MappingNode : public rclcpp::Node {
   void publishRasterizedScan(const PointCloud& cloud) {
     if (pub_rasterized_->get_subscription_count() == 0) return;
     pub_rasterized_->publish(nanopcl::to(cloud));
+  }
+
+  void publishDropCloud() {
+    if (map_.exists(layer::drop_obstacle_z)) {
+      pub_drop_cloud_->publish(ros2::toPointCloud2(map_, layer::drop_obstacle_z));
+    }
   }
 
   void printNodeSummary() const {
@@ -375,6 +384,7 @@ class MappingNode : public rclcpp::Node {
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr    pub_post_map_;
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr      pub_post_gridmap_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_normals_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr    pub_drop_cloud_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_reset_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_postprocess_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_inpainting_;

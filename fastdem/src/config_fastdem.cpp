@@ -101,6 +101,23 @@ Config parse(const YAML::Node& root) {
     load(n, "clear_threshold", cfg.raycasting.clear_threshold);
   }
 
+  // Drop detection
+  if (auto n = root["drop_detection"]) {
+    load(n, "enabled", cfg.drop_detection.enabled);
+    load(n, "reference_z_offset", cfg.drop_detection.reference_z_offset);
+    load(n, "drop_height_threshold", cfg.drop_detection.drop_height_threshold);
+    load(n, "unknown_is_drop", cfg.drop_detection.unknown_is_drop);
+    load(n, "min_detection_range", cfg.drop_detection.min_detection_range);
+    load(n, "max_detection_range", cfg.drop_detection.max_detection_range);
+    load(n, "filter_small_unknown_holes",
+         cfg.drop_detection.filter_small_unknown_holes);
+    load(n, "max_safe_unknown_hole_size",
+         cfg.drop_detection.max_safe_unknown_hole_size);
+    load(n, "inflation_radius", cfg.drop_detection.inflation_radius);
+    load(n, "virtual_obstacle_height", cfg.drop_detection.virtual_obstacle_height);
+    load(n, "compensate_robot_tilt", cfg.drop_detection.compensate_robot_tilt);
+  }
+
   // Sensor model
   if (auto n = root["sensor_model"]) {
     std::string sensor_str;
@@ -257,6 +274,47 @@ void validate(Config& cfg) {
     m.sensor_model.rgbd.lateral_factor = 0.0f;
   }
 
+  // Drop detection validation
+  if (m.drop_detection.enabled) {
+    if (m.drop_detection.drop_height_threshold <= 0.0f) {
+      spdlog::warn(
+          "[Config] drop_detection.drop_height_threshold ({}) must be > 0, "
+          "clamping to 0.05",
+          m.drop_detection.drop_height_threshold);
+      m.drop_detection.drop_height_threshold = 0.05f;
+    }
+    if (m.drop_detection.max_detection_range <=
+        m.drop_detection.min_detection_range) {
+      spdlog::warn(
+          "[Config] drop_detection.max_detection_range ({}) must be > "
+          "min_detection_range ({}), resetting to defaults",
+          m.drop_detection.max_detection_range,
+          m.drop_detection.min_detection_range);
+      m.drop_detection.min_detection_range = 0.3f;
+      m.drop_detection.max_detection_range = 3.0f;
+    }
+    if (m.drop_detection.max_safe_unknown_hole_size < 0.0f) {
+      spdlog::warn(
+          "[Config] drop_detection.max_safe_unknown_hole_size ({}) must be "
+          ">= 0, clamping to 0.10",
+          m.drop_detection.max_safe_unknown_hole_size);
+      m.drop_detection.max_safe_unknown_hole_size = 0.10f;
+    }
+    if (m.drop_detection.inflation_radius < 0.0f) {
+      spdlog::warn(
+          "[Config] drop_detection.inflation_radius ({}) must be >= 0, "
+          "clamping to 0",
+          m.drop_detection.inflation_radius);
+      m.drop_detection.inflation_radius = 0.0f;
+    }
+    if (m.drop_detection.virtual_obstacle_height < 0.0f) {
+      spdlog::warn(
+          "[Config] drop_detection.virtual_obstacle_height ({}) must be >= 0, "
+          "clamping to 0.30",
+          m.drop_detection.virtual_obstacle_height);
+      m.drop_detection.virtual_obstacle_height = 0.30f;
+    }
+  }
 }
 
 }  // namespace detail

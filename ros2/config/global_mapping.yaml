@@ -64,6 +64,19 @@ raycasting:
   log_odds_max: 2.0
   clear_threshold: -1.0
 
+drop_detection:
+  enabled: false
+  reference_z_offset: 0.0
+  drop_height_threshold: 0.05
+  unknown_is_drop: true
+  min_detection_range: 0.3
+  max_detection_range: 3.0
+  filter_small_unknown_holes: false
+  max_safe_unknown_hole_size: 0.10
+  inflation_radius: 0.0
+  virtual_obstacle_height: 0.30
+  compensate_robot_tilt: false
+
 inpainting:
   enabled: false
   max_iterations: 3

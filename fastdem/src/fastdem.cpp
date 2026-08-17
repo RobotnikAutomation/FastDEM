@@ -11,6 +11,7 @@
 #include <nanopcl/filters/downsample.hpp>
 
 #include "fastdem/postprocess/raycasting.hpp"
+#include "fastdem/postprocess/drop_detection.hpp"
 
 namespace fastdem {
 
@@ -156,6 +157,11 @@ bool FastDEM::integrateImpl(const PointCloud& cloud,
     auto ray_scan = nanopcl::filters::voxelGrid(
         points, map_.getResolution(), nanopcl::filters::VoxelMode::ANY);
     applyRaycasting(map_, ray_scan, sensor_origin, cfg_.raycasting);
+  }
+
+  // 4. (Optional) Drop detection - negative obstacle detection
+  if (cfg_.drop_detection.enabled) {
+    applyDropDetection(map_, T_world_base, cfg_.drop_detection);
   }
 
   return true;

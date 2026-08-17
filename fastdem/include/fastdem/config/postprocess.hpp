@@ -48,6 +48,21 @@ struct FeatureExtraction {
   float step_upper_percentile = 0.95f;  ///< Upper percentile for step [0,1]
 };
 
+/// Drop/negative obstacle detection for cliff and edge hazards.
+struct DropDetection {
+  bool enabled = false;
+  float reference_z_offset = 0.0f;        ///< Offset from robot base [m]
+  float drop_height_threshold = 0.05f;    ///< Min drop depth to trigger [m]
+  bool unknown_is_drop = true;            ///< Treat unmeasured (NaN) as drop hazard
+  float min_detection_range = 0.3f;       ///< Min range from robot [m]
+  float max_detection_range = 3.0f;       ///< Max range from robot [m]
+  bool filter_small_unknown_holes = false;  ///< Enable small NaN component filtering
+  float max_safe_unknown_hole_size = 0.10f; ///< Max size of safe NaN holes [m²]
+  float inflation_radius = 0.0f;          ///< Dilation radius for drop mask [m]
+  float virtual_obstacle_height = 0.30f;  ///< Height of virtual obstacle above drop [m]
+  bool compensate_robot_tilt = false;     ///< Use roll/pitch for reference plane (future)
+};
+
 /// Post-processing configuration aggregate.
 struct PostProcess {
   Inpainting inpainting;
