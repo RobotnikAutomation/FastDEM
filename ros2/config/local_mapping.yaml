@@ -75,6 +75,7 @@ drop_detection:
   inflation_radius: 0.0
   virtual_obstacle_height: 0.30
   compensate_robot_tilt: false
+  forward_aperture_rad: 2.7  # [rad] full opening of detection sector; 2π = full circle
 
 inpainting:
   enabled: true

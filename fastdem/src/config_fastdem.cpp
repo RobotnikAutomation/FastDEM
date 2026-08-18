@@ -116,6 +116,7 @@ Config parse(const YAML::Node& root) {
     load(n, "inflation_radius", cfg.drop_detection.inflation_radius);
     load(n, "virtual_obstacle_height", cfg.drop_detection.virtual_obstacle_height);
     load(n, "compensate_robot_tilt", cfg.drop_detection.compensate_robot_tilt);
+    load(n, "forward_aperture_rad", cfg.drop_detection.forward_aperture_rad);
   }
 
   // Sensor model

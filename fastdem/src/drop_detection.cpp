@@ -185,6 +185,12 @@ void applyDropDetection(ElevationMap& map,
   float min_range_sq = config.min_detection_range * config.min_detection_range;
   float max_range_sq = config.max_detection_range * config.max_detection_range;
 
+  // Precompute forward-sector check (robot x-axis is forward by convention)
+  const Eigen::Vector2f forward =
+      T_world_base.rotation().block<2, 1>(0, 0).cast<float>().normalized();
+  const float cos_half_aperture = std::cos(config.forward_aperture_rad * 0.5f);
+  const bool use_sector = config.forward_aperture_rad < (2.0f * static_cast<float>(M_PI));
+
   // Process all cells
   Eigen::Index rows = map.getSize()(0);
   Eigen::Index cols = map.getSize()(1);
@@ -205,6 +211,15 @@ void applyDropDetection(ElevationMap& map,
         drop_mat(r, c) = 0.0f;
         obstacle_z_mat(r, c) = NAN;
         continue;
+      }
+
+      // Check forward sector
+      if (use_sector && dist_sq > 0.0f) {
+        if (delta.normalized().dot(forward) < cos_half_aperture) {
+          drop_mat(r, c) = 0.0f;
+          obstacle_z_mat(r, c) = NAN;
+          continue;
+        }
       }
 
       const float reference_z = computeReferenceZ(T_world_base, config, cell_pos);

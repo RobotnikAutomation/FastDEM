@@ -58,3 +58,4 @@ drop_detection:
   inflation_radius: 0.0      # [m] dilation radius for drop mask
   virtual_obstacle_height: 0.30  # [m] height of virtual obstacle above drop
   compensate_robot_tilt: false   # use roll/pitch for reference plane (future)
+  forward_aperture_rad: 2.7  # [rad] full opening of detection sector; 2π = full circle

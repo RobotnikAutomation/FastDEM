@@ -61,6 +61,7 @@ struct DropDetection {
   float inflation_radius = 0.0f;          ///< Dilation radius for drop mask [m]
   float virtual_obstacle_height = 0.30f;  ///< Height of virtual obstacle above drop [m]
   bool compensate_robot_tilt = false;     ///< Use roll/pitch for reference plane (future)
+  float forward_aperture_rad = 6.2832f;   ///< Full opening angle of forward detection sector [rad]; 2π = full circle
 };
 
 /// Post-processing configuration aggregate.
