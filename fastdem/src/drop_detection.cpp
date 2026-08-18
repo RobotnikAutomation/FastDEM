@@ -101,44 +101,51 @@ void filterSmallUnknownHoles(nanogrid::Matrix& drop_mat,
   Eigen::Index rows = drop_mat.rows();
   Eigen::Index cols = drop_mat.cols();
 
-  // Find cell area
   float cell_area = resolution * resolution;
   int max_cells = static_cast<int>(std::ceil(max_safe_unknown_hole_size / cell_area));
 
-  // Visited matrix
   std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
 
-  // BFS for connected components
   for (Eigen::Index r = 0; r < rows; ++r) {
     for (Eigen::Index c = 0; c < cols; ++c) {
       if (!visited[r][c] && std::isnan(elevation_mat(r, c)) &&
-          drop_mat(r, c) > 0.5f) {  // Unknown and marked as drop
-        // BFS to find component
+          drop_mat(r, c) > 0.5f) {
         std::queue<std::pair<Eigen::Index, Eigen::Index>> q;
         q.push({r, c});
         visited[r][c] = true;
 
         std::vector<std::pair<Eigen::Index, Eigen::Index>> component;
+        // A hole is enclosed if no cell borders NaN territory outside the detection zone
+        bool is_enclosed = true;
+
         while (!q.empty()) {
           auto [cr, cc] = q.front();
           q.pop();
           component.push_back({cr, cc});
 
-          // 4-neighbors
           const std::pair<Eigen::Index, Eigen::Index> neighbors[] = {
               {cr - 1, cc}, {cr + 1, cc}, {cr, cc - 1}, {cr, cc + 1}};
           for (auto [nr, nc] : neighbors) {
-            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols &&
-                !visited[nr][nc] && std::isnan(elevation_mat(nr, nc)) &&
-                drop_mat(nr, nc) > 0.5f) {
-              visited[nr][nc] = true;
-              q.push({nr, nc});
+            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
+              is_enclosed = false;  // component touches map boundary
+              continue;
+            }
+            if (!std::isnan(elevation_mat(nr, nc))) continue;  // known terrain: wall
+
+            if (drop_mat(nr, nc) > 0.5f) {
+              // NaN within detection zone: part of same component
+              if (!visited[nr][nc]) {
+                visited[nr][nc] = true;
+                q.push({nr, nc});
+              }
+            } else {
+              // NaN outside detection zone: hole opens into unmapped territory
+              is_enclosed = false;
             }
           }
         }
 
-        // If component is small, mark as safe
-        if (static_cast<int>(component.size()) <= max_cells) {
+        if (is_enclosed && static_cast<int>(component.size()) <= max_cells) {
           for (auto [cr, cc] : component) {
             drop_mat(cr, cc) = 0.0f;
           }
@@ -257,11 +264,12 @@ void applyDropDetection(ElevationMap& map,
     filterSmallUnknownHoles(drop_mat, elevation_mat, resolution,
                             config.max_safe_unknown_hole_size);
 
-    // Update obstacle_z to match filtered drop layer
+    // Update obstacle_z and source to match filtered drop layer
     for (Eigen::Index r = 0; r < rows; ++r) {
       for (Eigen::Index c = 0; c < cols; ++c) {
         if (drop_mat(r, c) < 0.5f) {
           obstacle_z_mat(r, c) = NAN;
+          if (source_mat(r, c) > 0.5f) source_mat(r, c) = 0.0f;
         }
       }
     }
