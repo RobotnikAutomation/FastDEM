@@ -42,6 +42,7 @@ constexpr auto color = "color";
 // Drop detection layers
 constexpr auto drop = "drop";
 constexpr auto drop_obstacle_z = "_drop_obstacle_z";
+constexpr auto drop_source = "drop_source";  ///< 0=safe, 1=elevation drop, 2=unknown drop
 
 /// Internal layers use '_' prefix and are excluded from visualization.
 inline bool isInternal(const std::string& name) {

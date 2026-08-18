@@ -170,14 +170,17 @@ void applyDropDetection(ElevationMap& map,
   // Initialize output layers (add if not exist)
   if (!map.exists(layer::drop)) map.add(layer::drop);
   if (!map.exists(layer::drop_obstacle_z)) map.add(layer::drop_obstacle_z);
+  if (!map.exists(layer::drop_source)) map.add(layer::drop_source);
 
   // Get output layer references
   nanogrid::Matrix& drop_mat = map.get(layer::drop);
   nanogrid::Matrix& obstacle_z_mat = map.get(layer::drop_obstacle_z);
+  nanogrid::Matrix& source_mat = map.get(layer::drop_source);
 
   // Clear and initialize layers with NaN
   drop_mat.setConstant(NAN);
   obstacle_z_mat.setConstant(NAN);
+  source_mat.setConstant(NAN);
 
   // Get elevation layer reference
   const nanogrid::Matrix& elevation_mat = map.get(layer::elevation);
@@ -210,6 +213,7 @@ void applyDropDetection(ElevationMap& map,
       if (dist_sq < min_range_sq || dist_sq > max_range_sq) {
         drop_mat(r, c) = 0.0f;
         obstacle_z_mat(r, c) = NAN;
+        source_mat(r, c) = NAN;
         continue;
       }
 
@@ -218,6 +222,7 @@ void applyDropDetection(ElevationMap& map,
         if (delta.normalized().dot(forward) < cos_half_aperture) {
           drop_mat(r, c) = 0.0f;
           obstacle_z_mat(r, c) = NAN;
+          source_mat(r, c) = NAN;
           continue;
         }
       }
@@ -225,15 +230,19 @@ void applyDropDetection(ElevationMap& map,
       const float reference_z = computeReferenceZ(T_world_base, config, cell_pos);
       float elevation = elevation_mat(r, c);
       bool is_drop = false;
+      float source_value = 0.0f;  // safe
 
       if (std::isfinite(elevation)) {
         float drop_depth = reference_z - elevation;
         is_drop = drop_depth > config.drop_height_threshold;
+        source_value = is_drop ? 1.0f : 0.0f;
       } else {
         is_drop = config.unknown_is_drop;
+        source_value = is_drop ? 2.0f : 0.0f;
       }
 
       drop_mat(r, c) = is_drop ? 1.0f : 0.0f;
+      source_mat(r, c) = source_value;
 
       if (is_drop) {
         obstacle_z_mat(r, c) = reference_z + config.virtual_obstacle_height;
