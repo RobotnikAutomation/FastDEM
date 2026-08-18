@@ -214,6 +214,7 @@ void applyDropDetection(ElevationMap& map,
         drop_mat(r, c) = 0.0f;
         obstacle_z_mat(r, c) = NAN;
         source_mat(r, c) = NAN;
+        safe_mat(r, c) = NAN;
         continue;
       }
 
@@ -223,6 +224,7 @@ void applyDropDetection(ElevationMap& map,
           drop_mat(r, c) = 0.0f;
           obstacle_z_mat(r, c) = NAN;
           source_mat(r, c) = NAN;
+          safe_mat(r, c) = NAN;
           continue;
         }
       }
@@ -243,6 +245,7 @@ void applyDropDetection(ElevationMap& map,
 
       drop_mat(r, c) = is_drop ? 1.0f : 0.0f;
       source_mat(r, c) = source_value;
+      safe_mat(r, c) = is_drop ? NAN : 1.0f;
 
       if (is_drop) {
         obstacle_z_mat(r, c) = reference_z + config.virtual_obstacle_height;
@@ -257,11 +260,13 @@ void applyDropDetection(ElevationMap& map,
     filterSmallUnknownHoles(drop_mat, elevation_mat, resolution,
                             config.max_safe_unknown_hole_size);
 
-    // Update obstacle_z to match filtered drop layer
+    // Update obstacle_z and source to match filtered drop layer
     for (Eigen::Index r = 0; r < rows; ++r) {
       for (Eigen::Index c = 0; c < cols; ++c) {
         if (drop_mat(r, c) < 0.5f) {
           obstacle_z_mat(r, c) = NAN;
+          if (source_mat(r, c) > 0.5f) source_mat(r, c) = 0.0f;
+          if (std::isnan(safe_mat(r, c))) safe_mat(r, c) = 1.0f;
         }
       }
     }

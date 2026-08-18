@@ -43,6 +43,7 @@ constexpr auto color = "color";
 constexpr auto drop = "drop";
 constexpr auto drop_obstacle_z = "_drop_obstacle_z";
 constexpr auto drop_source = "drop_source";  ///< 0=safe, 1=elevation drop, 2=unknown drop
+constexpr auto drop_safe = "drop_safe";      ///< 1.0 = evaluated and safe, NaN = outside zone or hazard
 
 /// Internal layers use '_' prefix and are excluded from visualization.
 inline bool isInternal(const std::string& name) {
