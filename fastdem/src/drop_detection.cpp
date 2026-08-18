@@ -25,16 +25,31 @@ namespace fastdem {
 namespace {
 
 /**
- * @brief Compute reference height for drop detection.
+ * @brief Compute reference height for drop detection at a given cell.
  *
- * For now, this returns a constant height based on robot z position.
- * In future, can be extended to compute support plane using roll/pitch.
+ * Without tilt compensation: constant horizontal plane at robot base z.
+ * With tilt compensation: tilted plane matching robot pitch/roll, so cells
+ * on the continuation of the robot's current stance are not false drops.
  */
 float computeReferenceZ(const Eigen::Isometry3d& T_world_base,
-                        const config::DropDetection& config) {
-  float reference_z = static_cast<float>(T_world_base.translation().z());
-  reference_z += config.reference_z_offset;
-  return reference_z;
+                        const config::DropDetection& config,
+                        const Eigen::Vector2f& cell_pos) {
+  const Eigen::Vector3d robot_pos = T_world_base.translation();
+  const float base_z =
+      static_cast<float>(robot_pos.z()) + config.reference_z_offset;
+
+  if (!config.compensate_robot_tilt) return base_z;
+
+  // Robot up-vector in world frame (col 2 of rotation matrix)
+  const Eigen::Vector3d up = T_world_base.rotation().col(2);
+  if (std::abs(up.z()) < 1e-6f) return base_z;  // degenerate tilt, fall back
+
+  // Intersect vertical line at cell_pos with robot's support plane:
+  //   up · (p - robot_pos) = 0  →  z = robot_z - (up_x*dx + up_y*dy) / up_z
+  const float dx = cell_pos.x() - static_cast<float>(robot_pos.x());
+  const float dy = cell_pos.y() - static_cast<float>(robot_pos.y());
+  return base_z -
+         static_cast<float>((up.x() * dx + up.y() * dy) / up.z());
 }
 
 /**
@@ -147,7 +162,6 @@ void applyDropDetection(ElevationMap& map,
   }
 
   float resolution = map.getResolution();
-  float reference_z = computeReferenceZ(T_world_base, config);
 
   // Robot position in map frame (2D)
   Eigen::Vector2f robot_pos =
@@ -193,22 +207,19 @@ void applyDropDetection(ElevationMap& map,
         continue;
       }
 
+      const float reference_z = computeReferenceZ(T_world_base, config, cell_pos);
       float elevation = elevation_mat(r, c);
       bool is_drop = false;
 
       if (std::isfinite(elevation)) {
-        // Known elevation
         float drop_depth = reference_z - elevation;
         is_drop = drop_depth > config.drop_height_threshold;
       } else {
-        // Unknown (NaN) elevation
         is_drop = config.unknown_is_drop;
       }
 
-      // Write drop layer
       drop_mat(r, c) = is_drop ? 1.0f : 0.0f;
 
-      // Write obstacle z layer
       if (is_drop) {
         obstacle_z_mat(r, c) = reference_z + config.virtual_obstacle_height;
       } else {
@@ -241,8 +252,13 @@ void applyDropDetection(ElevationMap& map,
       for (Eigen::Index c = 0; c < cols; ++c) {
         if (drop_mat(r, c) > 0.5f) {
           if (std::isnan(obstacle_z_mat(r, c))) {
-            obstacle_z_mat(r, c) =
-                reference_z + config.virtual_obstacle_height;
+            nanogrid::Index idx(r, c);
+            auto pos_opt = map.position(idx);
+            const Eigen::Vector2f cell_pos =
+                pos_opt ? pos_opt->cast<float>() : robot_pos;
+            const float ref_z =
+                computeReferenceZ(T_world_base, config, cell_pos);
+            obstacle_z_mat(r, c) = ref_z + config.virtual_obstacle_height;
           }
         } else {
           obstacle_z_mat(r, c) = NAN;
