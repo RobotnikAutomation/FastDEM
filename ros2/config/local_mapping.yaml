@@ -1,11 +1,11 @@
 # FastDEM ROS Configuration
 topics:
-  input_scans: ["/robot/top_laser/points"]  # multi-sensor: ["/lidar/points", "/realsense/points"]
+  input_scans: ["/robot/top_3d_laser/points"]  # multi-sensor: ["/lidar/points", "/realsense/points"]
   publish_rate: 10.0        # [Hz]
   post_process_rate: 10.0   # [Hz] 0 = service-only (no auto timer)
 
 tf:
-  base_frame: "robot_base_link"
+  base_frame: "robot_base_footprint"
   map_frame: "robot_odom"
   max_wait_time: 0.1   # [sec]
   max_stale_time: 0.1  # [sec]
@@ -17,7 +17,7 @@ map:
 
 point_filter:
   z_min: -0.5       # [m] min height in base frame
-  z_max: 2.0        # [m] max height in base frame
+  z_max: 2.5        # [m] max height in base frame
   range_min: 0.5    # [m] min range from sensor
   range_max: 20.0   # [m] max range from sensor
 
@@ -56,7 +56,7 @@ sensor_model:
 
 # ─── Post-processing ───────────────────────────────
 raycasting:
-  enabled: true
+  enabled: false
   height_conflict_threshold: 0.05  # [m]
   log_odds_observed: 0.4
   log_odds_ghost: 0.2
@@ -64,21 +64,21 @@ raycasting:
   clear_threshold: -1.0
 
 drop_detection:
-  enabled: false
+  enabled: true
   reference_z_offset: 0.0
-  drop_height_threshold: 0.05
+  drop_height_threshold: 0.10
   unknown_is_drop: true
-  min_detection_range: 0.3
+  min_detection_range: 0.1
   max_detection_range: 3.0
-  filter_small_unknown_holes: false
-  max_safe_unknown_hole_size: 0.10
+  filter_small_unknown_holes: true
+  max_safe_unknown_hole_size: 1.00
   inflation_radius: 0.0
   virtual_obstacle_height: 0.30
-  compensate_robot_tilt: false
+  compensate_robot_tilt: true
   forward_aperture_rad: 2.7  # [rad] full opening of detection sector; 2π = full circle
 
 inpainting:
-  enabled: true
+  enabled: false
   max_iterations: 3
   min_valid_neighbors: 2
 

@@ -1,0 +1,96 @@
+collision_monitor:
+  ros__parameters:
+    autostart_node: true
+    enabled: True
+    base_frame_id: "robot_base_footprint"
+    odom_frame_id: "robot_odom"
+    cmd_vel_in_topic: "/robot/pad_teleop/cmd_vel"
+    cmd_vel_out_topic: "/robot/robotnik_base_control/cmd_vel_unstamped"
+    state_topic: "~/state"
+    transform_tolerance: 0.5
+    source_timeout: 5.0
+    stop_pub_timeout: 2.0
+    enable_stamped_cmd_vel: False
+
+    observation_sources: ["drop_cloud"]
+    drop_cloud:
+      type: "pointcloud"
+      topic: "/fastdem/drop/cloud"
+
+    polygons: ["RotLimitNear", "ForwardApproach", "ForwardStop05m"]
+
+    RotLimitNear:
+      type: "velocity_polygon"
+      action_type: "limit"
+      min_points: 3
+      linear_limit: 0.0
+      angular_limit: 0.25
+      visualize: true
+      enabled: true
+      polygon_pub_topic: "polygon_rot_limit"
+      holonomic: false
+      velocity_polygons: ["rotation", "fallback"]
+
+      rotation:
+        points: "[[0.55, 0.55], [0.55, -0.55], [-0.55, -0.55], [-0.55, 0.55]]"
+        linear_min: -0.05
+        linear_max: 0.05
+        theta_min: -2.0
+        theta_max: 2.0
+
+      fallback:
+        points: "[[0.02, 0.02], [0.02, -0.02], [-0.02, -0.02], [-0.02, 0.02]]"
+        linear_min: -1.5
+        linear_max: 1.5
+        theta_min: -2.0
+        theta_max: 2.0
+
+    ForwardApproach:
+      type: "velocity_polygon"
+      action_type: "approach"
+      time_before_collision: 0.5
+      simulation_time_step: 0.05
+      min_points: 3
+      visualize: true
+      enabled: true
+      polygon_pub_topic: "polygon_forward_approach"
+      holonomic: false
+      velocity_polygons: ["forward", "fallback"]
+
+      forward:
+        points: "[[0.8, 0.45], [0.8, -0.45], [0.00, -0.45], [0.00, 0.45]]"
+        linear_min: 0.05
+        linear_max: 1.5
+        theta_min: -2.0
+        theta_max: 2.0
+
+      fallback:
+        points: "[[0.02, 0.02], [0.02, -0.02], [-0.02, -0.02], [-0.02, 0.02]]"
+        linear_min: -1.5
+        linear_max: 1.5
+        theta_min: -2.0
+        theta_max: 2.0
+
+    ForwardStop05m:
+      type: "velocity_polygon"
+      action_type: "stop"
+      min_points: 3
+      visualize: true
+      enabled: true
+      polygon_pub_topic: "polygon_forward_stop_05m"
+      holonomic: false
+      velocity_polygons: ["forward", "fallback"]
+
+      forward:
+        points: "[[0.75, 0.4], [0.75, -0.4], [0.00, -0.4], [0.00, 0.4]]"
+        linear_min: 0.05
+        linear_max: 1.5
+        theta_min: -2.0
+        theta_max: 2.0
+
+      fallback:
+        points: "[[0.02, 0.02], [0.02, -0.02], [-0.02, -0.02], [-0.02, 0.02]]"
+        linear_min: -1.5
+        linear_max: 1.5
+        theta_min: -2.0
+        theta_max: 2.0

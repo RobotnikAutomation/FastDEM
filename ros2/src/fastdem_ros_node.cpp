@@ -300,7 +300,17 @@ class MappingNode : public rclcpp::Node {
 
   void publishDropCloud() {
     if (map_.exists(layer::drop_obstacle_z)) {
-      pub_drop_cloud_->publish(ros2::toPointCloud2(map_, layer::drop_obstacle_z));
+      auto msg = ros2::toPointCloud2(map_, layer::drop_obstacle_z);
+
+      // Collision monitor discards sources with epoch-zero timestamps.
+      if (msg.header.stamp.sec == 0 && msg.header.stamp.nanosec == 0) {
+        msg.header.stamp = this->get_clock()->now();
+      }
+      if (msg.header.frame_id.empty()) {
+        msg.header.frame_id = cfg_.tf.map_frame;
+      }
+
+      pub_drop_cloud_->publish(msg);
     }
   }
 

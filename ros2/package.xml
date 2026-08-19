@@ -16,6 +16,8 @@
   <depend>sensor_msgs</depend>
   <depend>grid_map_msgs</depend>
   <depend>visualization_msgs</depend>
+  <exec_depend>nav2_collision_monitor</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
 
   <!-- Core library (Pure CMake package) -->
   <build_depend>fastdem</build_depend>
