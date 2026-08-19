@@ -370,7 +370,7 @@ void applyDropDetection(ElevationMap& map,
       for (Eigen::Index c = 0; c < cols; ++c) {
         if (drop_mat(r, c) < 0.5f) {
           obstacle_z_mat(r, c) = NAN;
-          source_mat(r, c) = 0.0f;
+          if (!std::isnan(source_mat(r, c))) source_mat(r, c) = 0.0f;
           if (std::isnan(safe_mat(r, c)) && !std::isnan(source_mat(r, c))) {  // was drop inside frustum, now filtered safe
             nanogrid::Index idx(r, c);
             auto pos_opt = map.position(idx);
@@ -406,6 +406,13 @@ void applyDropDetection(ElevationMap& map,
           obstacle_z_mat(r, c) = NAN;
         }
       }
+    }
+  }
+
+  // Enforce: safe_mat must be NaN for any cell outside the detection frustum
+  for (Eigen::Index r = 0; r < rows; ++r) {
+    for (Eigen::Index c = 0; c < cols; ++c) {
+      if (std::isnan(source_mat(r, c))) safe_mat(r, c) = NAN;
     }
   }
 }
