@@ -223,6 +223,8 @@ void filterSmallDrops(nanogrid::Matrix& drop_mat,
   }
 }
 
+}  // namespace
+
 void applyDropDetection(ElevationMap& map,
                         const Eigen::Isometry3d& T_world_base,
                         const config::DropDetection& config) {
@@ -244,16 +246,19 @@ void applyDropDetection(ElevationMap& map,
   if (!map.exists(layer::drop)) map.add(layer::drop);
   if (!map.exists(layer::drop_obstacle_z)) map.add(layer::drop_obstacle_z);
   if (!map.exists(layer::drop_source)) map.add(layer::drop_source);
+  if (!map.exists(layer::drop_safe)) map.add(layer::drop_safe);
 
   // Get output layer references
   nanogrid::Matrix& drop_mat = map.get(layer::drop);
   nanogrid::Matrix& obstacle_z_mat = map.get(layer::drop_obstacle_z);
   nanogrid::Matrix& source_mat = map.get(layer::drop_source);
+  nanogrid::Matrix& safe_mat = map.get(layer::drop_safe);
 
   // Clear and initialize layers with NaN
   drop_mat.setConstant(NAN);
   obstacle_z_mat.setConstant(NAN);
   source_mat.setConstant(NAN);
+  safe_mat.setConstant(NAN);
 
   // Get elevation layer reference
   const nanogrid::Matrix& elevation_mat = map.get(layer::elevation);
