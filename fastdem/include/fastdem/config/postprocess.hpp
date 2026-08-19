@@ -58,6 +58,9 @@ struct DropDetection {
   float max_detection_range = 3.0f;       ///< Max range from robot [m]
   bool filter_small_unknown_holes = false;  ///< Enable small NaN component filtering
   float max_safe_unknown_hole_size = 0.10f; ///< Max size of safe NaN holes [m²]
+  bool filter_small_drops = false;          ///< Enable small known-elevation drop filtering
+  float max_safe_drop_area = 0.10f;         ///< Max area of a safe known drop [m²]; 0 = disabled
+  float max_safe_drop_min_width = 0.0f;     ///< Max min-bounding-dimension of a safe drop [m]; 0 = disabled
   float inflation_radius = 0.0f;          ///< Dilation radius for drop mask [m]
   float virtual_obstacle_height = 0.30f;  ///< Height of virtual obstacle above drop [m]
   bool compensate_robot_tilt = false;     ///< Use roll/pitch for reference plane (future)

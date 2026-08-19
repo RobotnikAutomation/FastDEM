@@ -113,6 +113,9 @@ Config parse(const YAML::Node& root) {
          cfg.drop_detection.filter_small_unknown_holes);
     load(n, "max_safe_unknown_hole_size",
          cfg.drop_detection.max_safe_unknown_hole_size);
+    load(n, "filter_small_drops", cfg.drop_detection.filter_small_drops);
+    load(n, "max_safe_drop_area", cfg.drop_detection.max_safe_drop_area);
+    load(n, "max_safe_drop_min_width", cfg.drop_detection.max_safe_drop_min_width);
     load(n, "inflation_radius", cfg.drop_detection.inflation_radius);
     load(n, "virtual_obstacle_height", cfg.drop_detection.virtual_obstacle_height);
     load(n, "compensate_robot_tilt", cfg.drop_detection.compensate_robot_tilt);
