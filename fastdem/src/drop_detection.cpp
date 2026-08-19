@@ -323,7 +323,7 @@ void applyDropDetection(ElevationMap& map,
 
       drop_mat(r, c) = is_drop ? 1.0f : 0.0f;
       source_mat(r, c) = source_value;
-      safe_mat(r, c) = is_drop ? NAN : 1.0f;
+      safe_mat(r, c) = is_drop ? NAN : (reference_z + config.virtual_obstacle_height);
 
       if (is_drop) {
         obstacle_z_mat(r, c) = reference_z + config.virtual_obstacle_height;
@@ -344,7 +344,15 @@ void applyDropDetection(ElevationMap& map,
         if (drop_mat(r, c) < 0.5f) {
           obstacle_z_mat(r, c) = NAN;
           if (source_mat(r, c) > 0.5f) source_mat(r, c) = 0.0f;
-          if (std::isnan(safe_mat(r, c))) safe_mat(r, c) = 1.0f;
+          if (std::isnan(safe_mat(r, c))) {
+            nanogrid::Index idx(r, c);
+            auto pos_opt = map.position(idx);
+            if (pos_opt) {
+              const Eigen::Vector2f cp = pos_opt->cast<float>();
+              safe_mat(r, c) = computeReferenceZ(T_world_base, config, cp)
+                               + config.virtual_obstacle_height;
+            }
+          }
         }
       }
     }
@@ -360,7 +368,15 @@ void applyDropDetection(ElevationMap& map,
         if (drop_mat(r, c) < 0.5f) {
           obstacle_z_mat(r, c) = NAN;
           source_mat(r, c) = 0.0f;
-          safe_mat(r, c) = 1.0f;
+          if (std::isnan(safe_mat(r, c))) {  // was drop, now filtered safe
+            nanogrid::Index idx(r, c);
+            auto pos_opt = map.position(idx);
+            if (pos_opt) {
+              const Eigen::Vector2f cp = pos_opt->cast<float>();
+              safe_mat(r, c) = computeReferenceZ(T_world_base, config, cp)
+                               + config.virtual_obstacle_height;
+            }
+          }
         }
       }
     }
