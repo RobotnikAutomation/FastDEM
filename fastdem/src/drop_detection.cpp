@@ -269,8 +269,11 @@ void applyDropDetection(ElevationMap& map,
   // Precompute forward-sector check (robot x-axis is forward by convention)
   const Eigen::Vector2f forward =
       T_world_base.rotation().block<2, 1>(0, 0).cast<float>().normalized();
+  // Tolerance avoids treating 6.2832 (≈ 2π) as a partial sector due to float precision
+  constexpr float k2Pi = 2.0f * static_cast<float>(M_PI);
+  const bool use_sector = config.forward_aperture_rad < k2Pi - 1e-3f;
+
   const float cos_half_aperture = std::cos(config.forward_aperture_rad * 0.5f);
-  const bool use_sector = config.forward_aperture_rad < (2.0f * static_cast<float>(M_PI));
 
   // Process all cells
   Eigen::Index rows = map.getSize()(0);
@@ -344,7 +347,7 @@ void applyDropDetection(ElevationMap& map,
         if (drop_mat(r, c) < 0.5f) {
           obstacle_z_mat(r, c) = NAN;
           if (source_mat(r, c) > 0.5f) source_mat(r, c) = 0.0f;
-          if (std::isnan(safe_mat(r, c))) {
+          if (std::isnan(safe_mat(r, c)) && !std::isnan(source_mat(r, c))) {
             nanogrid::Index idx(r, c);
             auto pos_opt = map.position(idx);
             if (pos_opt) {
@@ -368,7 +371,7 @@ void applyDropDetection(ElevationMap& map,
         if (drop_mat(r, c) < 0.5f) {
           obstacle_z_mat(r, c) = NAN;
           source_mat(r, c) = 0.0f;
-          if (std::isnan(safe_mat(r, c))) {  // was drop, now filtered safe
+          if (std::isnan(safe_mat(r, c)) && !std::isnan(source_mat(r, c))) {  // was drop inside frustum, now filtered safe
             nanogrid::Index idx(r, c);
             auto pos_opt = map.position(idx);
             if (pos_opt) {
