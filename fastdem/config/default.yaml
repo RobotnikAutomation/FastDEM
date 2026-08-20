@@ -55,6 +55,8 @@ drop_detection:
   max_detection_range: 3.0   # [m] max range from robot
   filter_small_unknown_holes: false  # enable small NaN component filtering
   max_safe_unknown_hole_size: 0.10   # [m²] max size of safe NaN holes
+  filter_small_drops: false          # enable narrow drop (trench) filtering via raycast
+  max_safe_drop_width: 0.0           # [m] max drop width considered safe (raycast from robot); 0 = disabled
   inflation_radius: 0.0      # [m] dilation radius for drop mask
   virtual_obstacle_height: 0.30  # [m] height of virtual obstacle above drop
   compensate_robot_tilt: false   # use roll/pitch for reference plane (future)

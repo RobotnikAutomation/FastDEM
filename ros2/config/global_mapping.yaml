@@ -73,6 +73,8 @@ drop_detection:
   max_detection_range: 3.0
   filter_small_unknown_holes: false
   max_safe_unknown_hole_size: 0.10
+  filter_small_drops: false
+  max_safe_drop_width: 0.0  # [m] max drop width considered safe (raycast from robot); 0 = disabled
   inflation_radius: 0.0
   virtual_obstacle_height: 0.30
   compensate_robot_tilt: false

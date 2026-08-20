@@ -149,74 +149,89 @@ void filterSmallUnknownHoles(nanogrid::Matrix& drop_mat,
 }
 
 /**
- * @brief Filter small known-elevation drop components.
+ * @brief Filter narrow drops (trenches) using robot-centric raycast.
  *
- * Filters by area OR min bounding-box dimension (to catch both blobs and narrow trenches).
+ * For each drop cell, raycast bidirectionally along the robot→cell direction:
+ * - Towards robot: measure distance to nearest safe cell (or max threshold)
+ * - Away from robot: measure distance to nearest safe cell (or max threshold)
+ *
+ * If either direction reaches safe within max_safe_drop_width/2, the drop
+ * is geometrically narrow and is marked as filtered (safe).
+ *
+ * This filter is ROBOT-CENTRIC: it measures obstacle width from the robot's
+ * perspective for local mapping. For global maps, a generic directional raycast
+ * would be needed instead.
+ *
  * Only acts on drops from known elevation (source = 1.0), not NaN holes.
  */
-void filterSmallDrops(nanogrid::Matrix& drop_mat,
-                      const nanogrid::Matrix& elevation_mat,
-                      float resolution,
-                      float max_safe_drop_area,
-                      float max_safe_drop_min_width) {
+void filterSmallDropsRaycast(nanogrid::Matrix& drop_mat,
+                             const nanogrid::Matrix& elevation_mat,
+                             const ElevationMap& map,
+                             const Eigen::Vector2f& robot_pos,
+                             float resolution,
+                             float max_safe_drop_width) {
+  if (max_safe_drop_width <= 0.0f) return;
+
   Eigen::Index rows = drop_mat.rows();
   Eigen::Index cols = drop_mat.cols();
-
-  int max_cells_area =
-      (max_safe_drop_area > 0.0f)
-          ? static_cast<int>(std::ceil(max_safe_drop_area / (resolution * resolution)))
-          : std::numeric_limits<int>::max();
-  int max_cells_width =
-      (max_safe_drop_min_width > 0.0f)
-          ? static_cast<int>(std::ceil(max_safe_drop_min_width / resolution))
-          : std::numeric_limits<int>::max();
-
-  if (max_cells_area == std::numeric_limits<int>::max() &&
-      max_cells_width == std::numeric_limits<int>::max())
-    return;  // both disabled
-
-  std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+  float half_width = max_safe_drop_width * 0.5f;
 
   for (Eigen::Index r = 0; r < rows; ++r) {
     for (Eigen::Index c = 0; c < cols; ++c) {
       // Only known-elevation drops (finite elevation, marked as drop)
-      if (!visited[r][c] && std::isfinite(elevation_mat(r, c)) &&
-          drop_mat(r, c) > 0.5f) {
-        std::queue<std::pair<Eigen::Index, Eigen::Index>> q;
-        q.push({r, c});
-        visited[r][c] = true;
+      if (std::isfinite(elevation_mat(r, c)) && drop_mat(r, c) > 0.5f) {
+        // Get cell world position
+        nanogrid::Index idx(r, c);
+        auto pos_opt = map.position(idx);
+        if (!pos_opt) continue;
 
-        std::vector<std::pair<Eigen::Index, Eigen::Index>> component;
-        Eigen::Index min_r = r, max_r = r, min_c = c, max_c = c;
+        Eigen::Vector2f cell_pos = pos_opt->cast<float>();
+        Eigen::Vector2f delta = cell_pos - robot_pos;
+        float dist_to_cell = delta.norm();
 
-        while (!q.empty()) {
-          auto [cr, cc] = q.front();
-          q.pop();
-          component.push_back({cr, cc});
-          min_r = std::min(min_r, cr); max_r = std::max(max_r, cr);
-          min_c = std::min(min_c, cc); max_c = std::max(max_c, cc);
+        if (dist_to_cell < 1e-6f) continue;  // degenerate case
 
-          const std::pair<Eigen::Index, Eigen::Index> neighbors[] = {
-              {cr - 1, cc}, {cr + 1, cc}, {cr, cc - 1}, {cr, cc + 1}};
-          for (auto [nr, nc] : neighbors) {
-            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols &&
-                !visited[nr][nc] && std::isfinite(elevation_mat(nr, nc)) &&
-                drop_mat(nr, nc) > 0.5f) {
-              visited[nr][nc] = true;
-              q.push({nr, nc});
-            }
+        Eigen::Vector2f ray_dir = delta / dist_to_cell;  // normalized direction
+
+        // Raycast in both directions along the robot→cell line
+        bool found_safe_towards = false;
+        bool found_safe_away = false;
+
+        // Direction 1: towards robot (negative direction)
+        for (float t = resolution; t <= half_width; t += resolution) {
+          Eigen::Vector2f probe = cell_pos - t * ray_dir;
+          auto probe_idx_opt = map.index(probe.cast<double>());
+          if (!probe_idx_opt) break;  // out of bounds
+
+          Eigen::Index pr = probe_idx_opt.value()(0);
+          Eigen::Index pc = probe_idx_opt.value()(1);
+          if (pr < 0 || pr >= rows || pc < 0 || pc >= cols) break;
+
+          if (drop_mat(pr, pc) < 0.5f) {  // found safe
+            found_safe_towards = true;
+            break;
           }
         }
 
-        // Min bounding-box dimension (shorter side) as proxy for width
-        Eigen::Index min_dim = std::min(max_r - min_r + 1, max_c - min_c + 1);
-        bool small_area  = static_cast<int>(component.size()) <= max_cells_area;
-        bool narrow_width = min_dim <= max_cells_width;
+        // Direction 2: away from robot (positive direction)
+        for (float t = resolution; t <= half_width; t += resolution) {
+          Eigen::Vector2f probe = cell_pos + t * ray_dir;
+          auto probe_idx_opt = map.index(probe.cast<double>());
+          if (!probe_idx_opt) break;  // out of bounds
 
-        if (small_area || narrow_width) {
-          for (auto [cr, cc] : component) {
-            drop_mat(cr, cc) = 0.0f;
+          Eigen::Index pr = probe_idx_opt.value()(0);
+          Eigen::Index pc = probe_idx_opt.value()(1);
+          if (pr < 0 || pr >= rows || pc < 0 || pc >= cols) break;
+
+          if (drop_mat(pr, pc) < 0.5f) {  // found safe
+            found_safe_away = true;
+            break;
           }
+        }
+
+        // If narrow in both directions, filter it
+        if (found_safe_towards && found_safe_away) {
+          drop_mat(r, c) = 0.0f;
         }
       }
     }
@@ -361,10 +376,10 @@ void applyDropDetection(ElevationMap& map,
     }
   }
 
-  // Optional: filter small known-elevation drop regions (blobs and narrow trenches)
+  // Optional: filter narrow drops (trenches) using robot-centric raycast
   if (config.filter_small_drops) {
-    filterSmallDrops(drop_mat, elevation_mat, resolution,
-                     config.max_safe_drop_area, config.max_safe_drop_min_width);
+    filterSmallDropsRaycast(drop_mat, elevation_mat, map, robot_pos, resolution,
+                            config.max_safe_drop_width);
 
     for (Eigen::Index r = 0; r < rows; ++r) {
       for (Eigen::Index c = 0; c < cols; ++c) {
