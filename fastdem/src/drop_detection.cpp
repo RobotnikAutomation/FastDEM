@@ -152,11 +152,11 @@ void filterSmallUnknownHoles(nanogrid::Matrix& drop_mat,
  * @brief Filter narrow drops (trenches) using robot-centric raycast.
  *
  * For each drop cell, raycast bidirectionally along the robot→cell direction:
- * - Towards robot: measure distance to nearest safe cell (or max threshold)
- * - Away from robot: measure distance to nearest safe cell (or max threshold)
+ * - Towards robot: measure distance to nearest safe cell
+ * - Away from robot: measure distance to nearest safe cell
  *
- * If either direction reaches safe within max_safe_drop_width/2, the drop
- * is geometrically narrow and is marked as filtered (safe).
+ * If dist_towards + dist_away ≤ max_safe_drop_width, the total safe-to-safe
+ * span through this cell is narrow enough and it is marked as filtered (safe).
  *
  * This filter is ROBOT-CENTRIC: it measures obstacle width from the robot's
  * perspective for local mapping. For global maps, a generic directional raycast
@@ -174,7 +174,6 @@ void filterSmallDropsRaycast(nanogrid::Matrix& drop_mat,
 
   Eigen::Index rows = drop_mat.rows();
   Eigen::Index cols = drop_mat.cols();
-  float half_width = max_safe_drop_width * 0.5f;
 
   for (Eigen::Index r = 0; r < rows; ++r) {
     for (Eigen::Index c = 0; c < cols; ++c) {
@@ -193,12 +192,13 @@ void filterSmallDropsRaycast(nanogrid::Matrix& drop_mat,
 
         Eigen::Vector2f ray_dir = delta / dist_to_cell;  // normalized direction
 
-        // Raycast in both directions along the robot→cell line
-        bool found_safe_towards = false;
-        bool found_safe_away = false;
+        // Raycast in both directions along the robot→cell line.
+        // Measure distance to nearest safe cell; use max_safe_drop_width if not found.
+        float dist_towards = max_safe_drop_width;
+        float dist_away = max_safe_drop_width;
 
         // Direction 1: towards robot (negative direction)
-        for (float t = resolution; t <= half_width; t += resolution) {
+        for (float t = resolution; t <= max_safe_drop_width; t += resolution) {
           Eigen::Vector2f probe = cell_pos - t * ray_dir;
           auto probe_idx_opt = map.index(probe.cast<double>());
           if (!probe_idx_opt) break;  // out of bounds
@@ -207,14 +207,14 @@ void filterSmallDropsRaycast(nanogrid::Matrix& drop_mat,
           Eigen::Index pc = probe_idx_opt.value()(1);
           if (pr < 0 || pr >= rows || pc < 0 || pc >= cols) break;
 
-          if (drop_mat(pr, pc) < 0.5f) {  // found safe
-            found_safe_towards = true;
+          if (drop_mat(pr, pc) < 0.5f) {
+            dist_towards = t;
             break;
           }
         }
 
         // Direction 2: away from robot (positive direction)
-        for (float t = resolution; t <= half_width; t += resolution) {
+        for (float t = resolution; t <= max_safe_drop_width; t += resolution) {
           Eigen::Vector2f probe = cell_pos + t * ray_dir;
           auto probe_idx_opt = map.index(probe.cast<double>());
           if (!probe_idx_opt) break;  // out of bounds
@@ -223,14 +223,14 @@ void filterSmallDropsRaycast(nanogrid::Matrix& drop_mat,
           Eigen::Index pc = probe_idx_opt.value()(1);
           if (pr < 0 || pr >= rows || pc < 0 || pc >= cols) break;
 
-          if (drop_mat(pr, pc) < 0.5f) {  // found safe
-            found_safe_away = true;
+          if (drop_mat(pr, pc) < 0.5f) {
+            dist_away = t;
             break;
           }
         }
 
-        // If narrow in both directions, filter it
-        if (found_safe_towards && found_safe_away) {
+        // Filter if total span (safe-to-safe through this cell) ≤ max_safe_drop_width
+        if (dist_towards + dist_away <= max_safe_drop_width) {
           drop_mat(r, c) = 0.0f;
         }
       }
