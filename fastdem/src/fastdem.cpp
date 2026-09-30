@@ -137,6 +137,12 @@ bool FastDEM::integrateImpl(const PointCloud& cloud,
   // 1. Preprocess scan (covariance + transform + filter)
   PointCloud points = preprocessScan(cloud, T_base_sensor, T_world_base);
   if (points.empty()) return false;
+
+  // Keep the map timestamp synchronized with the scan that produced the
+  // current map. All ROS outputs derived from the map, including
+  // ~/drop/cloud, use map_.getTimestamp() as their message timestamp.
+  map_.setTimestamp(cloud.timestamp());
+
   if (on_preprocessed_) {
     on_preprocessed_(points);
   }
